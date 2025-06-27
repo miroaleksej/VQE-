@@ -1,0 +1,37 @@
+from typing import List, Tuple
+import numpy as np
+from openfermion import MolecularData
+from openfermionpsi4 import run_psi4
+
+class Molecule:
+    def __init__(self, atoms: List[Tuple[str, Tuple[float, float, float]]], 
+                 basis: str = 'sto-3g', charge: int = 0):
+        """
+        Инициализация молекулярной структуры
+        
+        Параметры:
+            atoms: Список кортежей (символ, (x, y, z))
+            basis: Базисный набор (по умолчанию 'sto-3g')
+            charge: Заряд молекулы
+        """
+        self.atoms = atoms
+        self.basis = basis
+        self.charge = charge
+        self.molecular_data = None
+        
+    def compute_hamiltonian(self, method='scf', multiplicity=1):
+        """Вычисление гамильтониана с использованием Psi4"""
+        geometry = [list(atom) for atom in self.atoms]
+        molecule = MolecularData(geometry, self.basis, multiplicity, self.charge)
+        
+        molecule = run_psi4(molecule, run_scf=1, run_fci=1)
+        self.molecular_data = molecule
+        return molecule.get_molecular_hamiltonian()
+    
+    def get_one_body_integrals(self):
+        """Получение одноэлектронных интегралов"""
+        return self.molecular_data.one_body_integrals
+    
+    def get_two_body_integrals(self):
+        """Получение двухэлектронных интегралов"""
+        return self.molecular_data.two_body_integrals
